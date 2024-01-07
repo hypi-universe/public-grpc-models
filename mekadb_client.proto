@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "app.hypi.mekadb.client";
+option java_outer_classname = "MekaDBClientWrapper";
+
+package mekadb_client;
+
+service MekaDBClient {
+  //Log into a database to obtain an authentication context that can be used to execute SQL queries
+  rpc authenticate(AuthReq)returns(AuthCtx){}
+  //Executes the SQL query given and returns a JSON array response as a string.
+  //The JSON array contains objects where each key is the name of the column, lowercased.
+  //For example a table with the columns username, Age and CITY will return
+  //[{"username":"Courtney","age":1,"city":"San Francisco"}]
+  //i.e. the column names are lower cased, the values are the original as inserted into the table
+  //If there are no results, the string returned will always be "[]"
+  //i.e. you can always parse the string and assume there is a JSON array but it can be an empty array
+  rpc SqlWithJsonResponse(stream SqlRequest) returns(stream SqlResponse){}
+}
+
+message AuthReq {
+  //The username of a user that exists for the given database
+  string username = 1;
+  //The password of the username provided
+  string password = 2;
+  //The database that the given user has access to and to which the returned AuthCtx will be bound
+  string database = 3;
+  //The schema that the given user has access and to which the returned context will be bound, the tables queried must exist in this schema
+  optional string schema = 4;
+}
+
+message AuthCtx {
+  //The name of the database to execute the query against
+  string database = 1;
+  //The schema within the database that we should execute the query against
+  string schema = 2;
+  //Unique to the user, database, schema combination that was used to obtain the context
+  string token = 3;
+  int32 token_system_version = 4;
+}
+
+message SqlRequest {
+  int64 request_id = 1;
+  AuthCtx auth = 2;
+  //The SQL query to execute
+  string query = 3;
+  oneof params {
+    NumericQueryPlaceholder numeric = 4;
+    NamedQueryPlaceHolder named = 5;
+  }
+}
+
+message PlaceholderValue {
+  oneof data {
+    int32 i32_t = 1;
+    int64 i64_t = 2;
+    float float_t = 3;
+    double double_t = 4;
+    bool bool_t = 5;
+    string str_t = 6;
+    //Binary data - note that no filtering can be done on binary data
+    bytes binary_t = 7;
+    //A timestamp representing the number of milliseconds since 01-01-1970 UTC
+    int64 timestamp_millis = 8;
+  }
+}
+message NumericQueryPlaceholder {
+  repeated PlaceholderValue value = 1;
+}
+
+message PlaceholderPair {
+  string name = 1;
+  PlaceholderValue value = 2;
+}
+
+message NamedQueryPlaceHolder {
+  repeated PlaceholderPair values = 1;
+}
+
+message SqlResponse {
+  int64 request_id = 1;
+  oneof payload {
+    string response = 2;
+    SqlResponseError error = 3;
+  }
+}
+
+message SqlResponseError {
+  int32 code = 1;
+  string message = 2;
+}
