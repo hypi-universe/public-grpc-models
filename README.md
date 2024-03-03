@@ -1,6 +1,11 @@
 # Hypi's public gRPC models
 
-* [MekaDB](mekadb_client.proto) 
+* [MekaDB](mekadb_client.proto)
+  * Higher level clients are available in some languages
+    * [Rust](https://crates.io/crates/mekadb)
+    * [Java](https://central.sonatype.com/artifact/app.hypi.mekadb/client)
+    * [Python](https://pypi.org/project/mekadb/)
+    * [NodeJS](https://www.npmjs.com/package/@hypi/mekadb)
 
 ## MekaDB
 
