@@ -16,7 +16,10 @@ service MekaDBClient {
   //i.e. the column names are lower cased, the values are the original as inserted into the table
   //If there are no results, the string returned will always be "[]"
   //i.e. you can always parse the string and assume there is a JSON array but it can be an empty array
-  rpc SqlWithJsonResponse(stream SqlRequest) returns(stream SqlResponse){}
+  rpc sql_query(SqlRequest) returns(SqlResponse){}
+  // switched from streaming - a lot of added complexity in detecting errors, killed connections and so on
+  //also no apparent significant benefit for the cost of the added complexity - https://stackoverflow.com/a/56774950/400048 and https://nshnt.medium.com/using-grpc-streams-for-unary-calls-cd64a1638c8a
+  //  rpc SqlWithJsonResponse(stream SqlRequest) returns(stream SqlResponse){}
 }
 
 message AuthReq {
