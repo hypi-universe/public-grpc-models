@@ -4,9 +4,9 @@ option java_multiple_files = true;
 option java_package = "app.hypi.mekadb.client";
 option java_outer_classname = "MekaDBClientWrapper";
 
-package mekadb_client;
+package mekadb;
 
-service MekaDBClient {
+service MekaDB {
   //Log into a database to obtain an authentication context that can be used to execute SQL queries
   rpc authenticate(AuthReq)returns(AuthCtx){}
   //Executes the SQL query given and returns a JSON array response as a string.
@@ -17,6 +17,7 @@ service MekaDBClient {
   //If there are no results, the string returned will always be "[]"
   //i.e. you can always parse the string and assume there is a JSON array but it can be an empty array
   rpc sql_query(SqlRequest) returns(SqlResponse){}
+  rpc information_schema(InfoRequest) returns(InfoResponse){}
   // switched from streaming - a lot of added complexity in detecting errors, killed connections and so on
   //also no apparent significant benefit for the cost of the added complexity - https://stackoverflow.com/a/56774950/400048 and https://nshnt.medium.com/using-grpc-streams-for-unary-calls-cd64a1638c8a
   //  rpc SqlWithJsonResponse(stream SqlRequest) returns(stream SqlResponse){}
@@ -92,4 +93,85 @@ message SqlResponse {
 message SqlResponseError {
   int32 code = 1;
   string message = 2;
+}
+
+message InfoRequest {
+  int64 request_id = 1;
+  //Requests that MekaDB provides the info schema for the catalog and schema in this token
+  AuthCtx auth = 2;
+}
+
+message InfoResponse {
+  int64 request_id = 1;
+  oneof payload {
+    InfoCatalog catalog = 2;
+    SqlResponseError error = 3;
+  }
+}
+
+message InfoCatalog {
+  int64 tenant_id = 1;
+  int64 id = 2;
+  string name = 3;
+  repeated InfoSchema schemas = 4;
+}
+
+message InfoSchema {
+  int64 tenant_id = 1;
+  int64 catalog_id = 2;
+  string catalog_name = 3;
+  int64 id = 4;
+  string name = 5;
+  repeated InfoTable tables = 6;
+}
+
+message InfoTable {
+  int64 tenant_id = 1;
+  int64 catalog_id = 2;
+  string catalog_name = 3;
+  int64 schema_id = 4;
+  string schema_name = 5;
+  int64 id = 6;
+  string name = 7;
+  repeated InfoConstraint constraints = 8;
+  repeated InfoColumn columns = 9;
+}
+
+message InfoColumn {
+  int64 tenant_id = 1;
+  int64 catalog_id = 2;
+  string catalog_name = 3;
+  int64 schema_id = 4;
+  string schema_name = 5;
+  int64 table_id = 6;
+  string table_name = 7;
+  string name = 8;
+  string target = 9;
+  string type = 10;
+  bool nullable = 11;
+}
+
+message InfoConstraint {
+  int64 tenant_id = 1;
+  int64 catalog_id = 2;
+  string catalog_name = 3;
+  int64 schema_id = 4;
+  string schema_name = 5;
+  int64 table_id = 6;
+  string table_name = 7;
+  string name = 8;
+  int64 source_table = 9;
+  int64 source_column = 10;
+  int64 target_table = 11;
+  int64 target_column = 12;
+  InfoConstraintAction on_delete = 13;
+  InfoConstraintAction on_update = 14;
+}
+
+enum InfoConstraintAction{
+  Cascade = 0;
+  Restrict = 1;
+  NoAction = 2;
+  SetNull = 3;
+  SetDefault = 4;
 }
